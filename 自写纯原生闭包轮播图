@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>自写纯原生闭包轮播图</title>
+<style type="text/css">
+*{
+	margin:0 auto;
+	padding:0;
+}
+ul,ol{list-style-type:none;}
+img{
+	border:none;
+	vertical-align:top;
+}
+.banner-bar{
+	width:550px;
+	overflow:hidden;
+	position:relative;
+}
+.banner-bar .banner{
+	width:2200px;
+	margin-left:0;
+}
+.banner-bar .banner li{float:left;}
+.banner-bar .banner li img{width:550px;}
+.banner-bar .lr-arror{
+	position:absolute;
+	top:50%;
+	margin-top:-7px;
+	color:#fff;
+	cursor:pointer;
+}
+.banner-bar .prev{left:15px;}
+.banner-bar .next{right:15px;}
+.banner-bar .banner-nav{
+	position:absolute;
+	bottom:10px;
+	right:0
+}
+.banner-bar .banner-nav li{
+	width:10px;
+	height:10px;
+	float:left;
+	border-radius:50%;
+	-webkit-border-radius:50%;
+	-moz-border-radius:50%;
+	background:#ccc;
+	margin-right:10px;
+	cursor:pointer;
+}
+.banner-bar .banner-nav li.active{
+	background:#000;
+}
+</style>
+<script type="text/javascript">
+var banner = function(){
+	var nowIndex = '';
+	var interval_timer = '';
+	var is_move = true;		//防止多次点击
+	
+	var banner = '';
+	var banner_ul = '';
+	var banner_li = '';
+	var banner_li_len =  '';
+	var banner_nav_li = '';
+	var banner_img = '';
+	var arrow_prev = '';
+	var arrow_next = '';
+	var banner_nav = '';
+	var banner_count_width = '';
+	
+	var obj_targetId = "banner";	//元素ID
+	var obj_autoplay = true;		//自动滚动true:false
+	var obj_direction = "left";		//滑动方向-left:right
+	var obj_delay = 5000;			//时间间隔
+	var obj_speed = 30;				//运动速度
+	var obj_showArrow = true;		//是否显示左右箭头
+	var obj_showDots = true;		//是否显示圆点
+	
+	var defaults = {
+			target : obj_targetId,
+			autoplay : obj_autoplay,
+			direction : obj_direction,
+			delay : obj_delay,
+			speed : obj_speed,
+			showArrow : obj_showArrow,
+			showDots : obj_showDots
+		}
+		
+	function init(opts){
+		if(typeof opts.autoplay == "undefined"){
+			opts.autoplay = obj_autoplay;
+		}
+		if(typeof opts.direction == "undefined"){
+			opts.direction = obj_direction;
+		}
+		if(typeof opts.delay == "undefined"){
+			opts.delay = obj_delay;
+		}
+		if(typeof opts.speed == "undefined"){
+			opts.speed = obj_speed;
+		}
+		if(typeof opts.showArrow == "undefined"){
+			opts.showArrow = obj_showArrow;
+		}
+		if(typeof opts.showDots == "undefined"){
+			opts.showDots = obj_showDots;
+		}
+		
+		var opts = typeof(opts) == "undefined" ? defaults : opts;
+			defaults = opts;
+			
+		banner = document.getElementById(defaults.target);
+		banner_ul = banner.getElementsByTagName("ul")[0];
+		banner_li = banner.getElementsByTagName("li");
+		banner_li_len = banner.getElementsByTagName("li").length;
+		banner_img = banner.getElementsByTagName("img")[0].width;
+	
+		arrow_prev = document.getElementById("prev");
+		arrow_next = document.getElementById("next");
+	
+		banner_nav = document.getElementById("banner_nav");
+		
+		for(var i=0;i<banner_li_len;i++){
+			var banner_li_width = parseInt(getstyle(banner_li[i],"width"));
+			if(!isNaN(banner_li_width)){
+				banner_count_width = banner_li_width * banner_li_len;
+			}else{
+				banner_count_width = banner_img * banner_li_len;
+			}
+			
+			if(defaults.showDots == true){
+				var create_li = document.createElement("li");
+					banner_nav.appendChild(create_li);
+				
+					banner_nav_li = banner_nav.getElementsByTagName("li");
+					banner_nav_li[i].index = i;
+					//添加圆点并添加事件
+					banner_nav_li[i].onclick=function(){
+						point(this.index);
+					}
+					banner_nav_li[0].className = 'active';
+			}
+		}
+		banner_ul.style.width = banner_count_width +"px";
+
+		if(defaults.showArrow == false){
+			arrow_prev.style.display = "none";
+			arrow_next.style.display = "none";
+		}
+		
+		if(defaults.autoplay == true){
+			autoplay(defaults.direction);
+		}
+		
+		bindEvent();
+	}
+	//绑定事件
+	function bindEvent(){
+		arrow_prev.onclick=function(){
+			prev();
+		};
+		
+		arrow_next.onclick=function(){
+			next();
+		};
+		
+		banner.onmouseover = function(){
+			clearInterval(interval_timer);
+		}
+		
+		banner.onmouseout=function(){
+			autoplay(defaults.direction);
+		}
+	}
+	//向右滑动
+	function next(){
+		if(is_move == true){
+			nowIndex++;
+			move(nowIndex);
+			is_move = false;
+		}
+	}
+	//向左滑动
+	function prev(){
+		if(is_move == true){
+			nowIndex--;
+			move(nowIndex);
+			is_move = false;
+		}
+	}
+	//圆点滑动
+	function point(index){
+		if(is_move == true){
+			move(index);
+			is_move = false;
+		}
+	}
+	//移动函数
+	function move(index){
+		if(nowIndex > (banner_li_len-1)){
+			nowIndex = 0;
+		}else if(nowIndex < 0){
+			nowIndex = banner_li_len-1;	
+		}else{
+			nowIndex = index;
+		}
+		
+		var move_margin = nowIndex * ("-"+banner_img);
+		
+		animate(banner_ul,'margin-left',move_margin,function(){
+			for(var i=0; i<banner_li_len; i++){
+				banner_nav_li[i].className = '';
+			}
+			banner_nav_li[nowIndex].className = "active";
+			is_move = true;
+		});
+	}
+	//定时器
+	function autoplay(direction){
+		interval_timer = setInterval(function(){
+			if(direction == 'left'){
+				next(banner_li_len,banner);
+			}else{
+				prev(banner_li_len,banner);
+			}
+		},defaults.delay);
+		
+		if(defaults.autoplay == false){
+			clearInterval(interval_timer);
+		}
+	}
+	//动画函数
+	function animate(obj,attr,target,fn){
+		clearInterval(obj.timer);
+		obj.timer = setInterval(function(){
+			var cur = 0;
+			if(attr == "opacity"){
+				cur = Math.round(parseFloat(getstyle(obj,attr))*100);
+			}else{
+				cur = parseInt(getstyle(obj,attr));
+			}
+			var speed = (target-cur)/8;
+				speed = speed>0?Math.ceil(speed):Math.floor(speed);
+			
+			if(cur == target){
+				clearInterval(obj.timer);
+				if(fn){
+					fn();
+				}
+			}else{
+				if(attr == "opacity"){
+					obj.style.filter = "alpha(opacity="+(cur+speed)+")";
+					obj.style.opacity = (cur+speed)/100;
+				}else{
+					obj.style[attr] = cur + speed + "px";
+				}
+			}
+		},defaults.speed)
+	}
+	//获取样式属性
+	function getstyle(obj,name){
+		if(obj.currentStyle){
+			return obj.currentStyle[name];
+		}else{
+			return getComputedStyle(obj,false)[name];
+		}
+	}
+	
+	return{
+		init:init
+	}
+}();
+
+window.onload = function(){
+	banner.init({
+		target : "banner",	//元素ID(必选)
+		autoplay : true,	//自动滚动true:false(可选：默认true)
+		direction : "left", //滑动方向left:right(可选:默认left)
+		delay : 5000,		//时间间隔(可选：默认5妙)
+		speed : 30,			//运动速度(可选:默认30)
+		showArrow : true,	//是否显示左右箭头(可选：默认：true)
+		showDots : true		//是否显示圆点	(可选：默认true)
+	});
+}
+</script>
+</head>
+
+<body>
+<div class="banner-bar" id="banner">
+    <ul class="banner">
+        <li><a href="#" title=""><img src="images/banner_small_1.png"></a></li>
+        <li><a href="#" title=""><img src="images/banner_small_2.png"></a></li>
+        <li><a href="#" title=""><img src="images/banner_small_3.png"></a></li>
+        <li><a href="#" title=""><img src="images/banner_small_4.png"></a></li>
+    </ul>
+	<ul class="banner-nav" id="banner_nav"></ul>
+    <span class="lr-arror prev" id="prev">&laquo;向左滚动</span>
+    <span class="lr-arror next" id="next">向右滚动&raquo;</span>
+</div>
+</body>
+</html>
